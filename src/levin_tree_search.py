@@ -108,67 +108,65 @@ class BFSLevin():
      
 
     def get_levin_cost(self, node):
-        """
-        Levin cost in log-space
-        """
-        d = node.get_depth()
-        if d <= 0:
+        depth = node.get_depth()
+        if depth <= 0:
             return float("-inf")
-        return np.log(d) - node.get_p()
+        return float(np.log(depth) - node.get_p())
 
     def search(self, initial_state, model, budget=-1):
         """
-        Returns solution_cost, expansions, trajectory and
-        IF NOT solved within budget -1, expansions, None
+        Returns solution_cost, expansions and the trajectory
+        IF NO solution is found within the budget, returns -1, 
+        expansions and none.
         """
+        if initial_state.is_solution():
+            return 0, 0, Trajectory([], [])
+
         open_list = []
         closed = set()
         expansions = 0
 
-        # Root node
         root = TreeNode(None, copy.deepcopy(initial_state), 0.0, 0, -1)
-
-        # Store action probabilities at root
-        p_root = model.get_probabilities(root.get_game_state().get_context())
-        p_root_log = np.log(np.maximum(p_root, 1e-300))
-        root.set_probability_distribution_actions(p_root_log)
+        root_probs = np.log(np.maximum(model.get_probabilities(root.get_game_state().get_context()), 1e-300))
+        root.set_probability_distribution_actions(root_probs)
         root.set_levin_cost(self.get_levin_cost(root))
-
         heapq.heappush(open_list, root)
 
         while open_list:
             if budget != -1 and expansions >= budget:
                 return -1, expansions, None
 
-            parent = heapq.heappop(open_list)
+            node = heapq.heappop(open_list)
+            state = node.get_game_state()
 
-            if parent in closed:
+            if state in closed:
                 continue
-            closed.add(parent)
 
+            closed.add(state)
             expansions += 1
 
-            if parent.get_game_state().is_solution():
-                return parent.get_depth(), expansions, self.recover_path(parent)
+            actions = state.successors_parent_pruning(node.get_action())
+            log_probs = node.get_probability_distribution_actions()
 
-            actions = parent.get_game_state().successors_parent_pruning(parent.get_action())
-            parent_log_probs = parent.get_probability_distribution_actions()
+            for action in actions:
+                child_state = copy.deepcopy(state)
+                child_state.apply_action(action)
 
-            for a in actions:
-                child_state = copy.deepcopy(parent.get_game_state())
-                child_state.apply_action(a)
+                if child_state in closed:
+                    continue
 
-                child_log_pi = parent.get_p() + parent_log_probs[a]
-                child_depth = parent.get_depth() + 1
+                child_depth = node.get_depth() + 1
+                child_log_p = node.get_p() + log_probs[action]
 
-                child_node = TreeNode(parent, child_state, child_log_pi, child_depth, a)
-
-                child_probs = model.get_probabilities(child_state.get_context())
-                child_log_probs = np.log(np.maximum(child_probs, 1e-300))
-                child_node.set_probability_distribution_actions(child_log_probs)
-
+                child_node = TreeNode(node, child_state, child_log_p, child_depth, action)
                 child_node.set_levin_cost(self.get_levin_cost(child_node))
+
+                # Return as soon as a goal is encountered
+                if child_state.is_solution():
+                    return child_depth, expansions, self.recover_path(child_node)
+
+                child_probs = np.log(np.maximum(model.get_probabilities(child_state.get_context()), 1e-300))
+                child_node.set_probability_distribution_actions(child_probs)
                 heapq.heappush(open_list, child_node)
 
         return -1, expansions, None
-    

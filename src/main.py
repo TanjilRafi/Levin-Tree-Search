@@ -54,7 +54,7 @@ def main():
 
     bootstrap.train_model(levin, model)
 
-    # print('Total time: ', time.time() - start)
+    print('Total time: ', time.time() - start)
 if __name__ == "__main__":
     main()
     

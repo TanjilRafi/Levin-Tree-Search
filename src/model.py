@@ -39,9 +39,9 @@ class Model:
         for state, action in zip(states, actions):
             regular_ctx, reversed_ctx = state.get_reversed_context()
 
-            # Version 1: regular only
+            # version 1
             self._gradient_update(regular_ctx, action)
 
-            # Version 2: regular + reversed
-            if self._use_reversed:
+            # version 2
+            if self._use_reversed and reversed_ctx != regular_ctx:
                 self._gradient_update(reversed_ctx, action)

@@ -1,0 +1,2 @@
+Attempting to solve easy instance with uniform model
+Found solution with cost  -1  and expanded  2000

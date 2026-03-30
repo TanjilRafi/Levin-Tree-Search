@@ -4,10 +4,12 @@ class UniformModel:
     def get_probabilities(self, _):
         return np.ones(4) / 4
 
+
 class Model:
-    def __init__(self):
+    def __init__(self, use_reversed=False):
         self._table = {}
         self._learning_rate = 0.2
+        self._use_reversed = use_reversed
 
     def _ensure_context(self, context):
         if context not in self._table:
@@ -22,6 +24,24 @@ class Model:
     def get_probabilities(self, context):
         weights = self._ensure_context(context)
         return self._softmax(weights)
-    
+
+    def _gradient_update(self, context, action):
+        weights = self._ensure_context(context)
+        probs = self._softmax(weights)
+        gradient = probs.copy()
+        gradient[action] -= 1.0
+        self._table[context] = weights - self._learning_rate * gradient
+
     def update(self, path):
-        pass
+        states = path.get_states()
+        actions = path.get_actions()
+
+        for state, action in zip(states, actions):
+            regular_ctx, reversed_ctx = state.get_reversed_context()
+
+            # Version 1: regular only
+            self._gradient_update(regular_ctx, action)
+
+            # Version 2: regular + reversed
+            if self._use_reversed:
+                self._gradient_update(reversed_ctx, action)

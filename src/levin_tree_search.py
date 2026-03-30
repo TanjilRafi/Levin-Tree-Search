@@ -108,8 +108,67 @@ class BFSLevin():
      
 
     def get_levin_cost(self, node):
-        pass
+        """
+        Levin cost in log-space
+        """
+        d = node.get_depth()
+        if d <= 0:
+            return float("-inf")
+        return np.log(d) - node.get_p()
 
     def search(self, initial_state, model, budget=-1):
-        pass
- 
+        """
+        Returns solution_cost, expansions, trajectory and
+        IF NOT solved within budget -1, expansions, None
+        """
+        open_list = []
+        closed = set()
+        expansions = 0
+
+        # Root node
+        root = TreeNode(None, copy.deepcopy(initial_state), 0.0, 0, -1)
+
+        # Store action probabilities at root
+        p_root = model.get_probabilities(root.get_game_state().get_context())
+        p_root_log = np.log(np.maximum(p_root, 1e-300))
+        root.set_probability_distribution_actions(p_root_log)
+        root.set_levin_cost(self.get_levin_cost(root))
+
+        heapq.heappush(open_list, root)
+
+        while open_list:
+            if budget != -1 and expansions >= budget:
+                return -1, expansions, None
+
+            parent = heapq.heappop(open_list)
+
+            if parent in closed:
+                continue
+            closed.add(parent)
+
+            expansions += 1
+
+            if parent.get_game_state().is_solution():
+                return parent.get_depth(), expansions, self.recover_path(parent)
+
+            actions = parent.get_game_state().successors_parent_pruning(parent.get_action())
+            parent_log_probs = parent.get_probability_distribution_actions()
+
+            for a in actions:
+                child_state = copy.deepcopy(parent.get_game_state())
+                child_state.apply_action(a)
+
+                child_log_pi = parent.get_p() + parent_log_probs[a]
+                child_depth = parent.get_depth() + 1
+
+                child_node = TreeNode(parent, child_state, child_log_pi, child_depth, a)
+
+                child_probs = model.get_probabilities(child_state.get_context())
+                child_log_probs = np.log(np.maximum(child_probs, 1e-300))
+                child_node.set_probability_distribution_actions(child_log_probs)
+
+                child_node.set_levin_cost(self.get_levin_cost(child_node))
+                heapq.heappush(open_list, child_node)
+
+        return -1, expansions, None
+    

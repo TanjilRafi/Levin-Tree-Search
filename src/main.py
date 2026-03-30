@@ -46,16 +46,15 @@ def main():
     print("Found solution with cost ", cost, " and expanded ", expanded)
     # easy_instance.plot()
 
-    # Uncomment the following lines once you have a working implementation of LevinTS
-    # print('Loaded ', len(states), ' instances.')
-    # start = time.time()
-    # model = Model()
-    # levin = BFSLevin()
-    # bootstrap = Bootstrap(states)
+    print('Loaded ', len(states), ' instances.')
+    start = time.time()
+    model = Model(use_reversed=False)
+    levin = BFSLevin()
+    bootstrap = Bootstrap(states)
 
-    # bootstrap.train_model(levin, model)
+    bootstrap.train_model(levin, model)
 
-    # print('Total time: ', time.time() - start)
+    print('Total time: ', time.time() - start)
 if __name__ == "__main__":
     main()
     

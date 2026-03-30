@@ -48,13 +48,13 @@ def main():
 
     print('Loaded ', len(states), ' instances.')
     start = time.time()
-    model = Model(use_reversed=False)
+    model = Model(use_reversed=True)
     levin = BFSLevin()
     bootstrap = Bootstrap(states)
 
     bootstrap.train_model(levin, model)
 
-    print('Total time: ', time.time() - start)
+    # print('Total time: ', time.time() - start)
 if __name__ == "__main__":
     main()
     

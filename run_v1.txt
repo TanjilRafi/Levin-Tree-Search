@@ -1447,4 +1447,3 @@ Budget:  32000
 Attempting  puzzle_343: solved. puzzle_343
 Attempting  puzzle_836: solved. puzzle_836
 Number solved:  2
-Total time:  576.4282970428467
